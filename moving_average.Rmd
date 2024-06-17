@@ -1,0 +1,76 @@
+---
+title: "moving_average"
+author: "M"
+date: "2024-06-14"
+output: html_document
+---
+
+```{r}
+library(lubridate)
+library(forecast)
+library(dplyr)
+library(zoo)
+library(TTR)
+library(xts)
+library(ggplot2)
+library(ggfortify)
+library(tseries)
+```
+
+Making dataset
+```{r}
+#dates <- as.yearqtr(seq(yq("2020 q1"), yq("2023 q4"), "quarters"), format = "%Y-%m-%d")
+#dates <- seq(yq("2020 q1"), yq("2023 q4"), "quarters")
+#values <- (349 313 350 322 342 341 344 348 343 345 313 308 325 344 334 347)
+
+set.seed(123)
+
+values<- c(rnorm(100, 335.5))
+data <- data.frame(values)
+
+data <- data %>% 
+  mutate(
+    MA.3 = ma(values, 3, centre = FALSE),
+    MA.2x4 = ma(values, 4, centre = TRUE),
+    WMA.3 = WMA(values, 3, wts = c(0.15,0.35, 0.5))
+  )
+
+data <- zoo(data, yearqtr(seq(1999.00, 2023.75,by = 0.25)), frequency = 4)
+
+
+```
+
+
+Plotting moving average
+```{r}
+autoplot(data[, c(1,2)], facets = FALSE) + 
+  ggtitle("Moving averages") + ylab("Values") +
+  xlab("Dates") 
+autoplot(data[, c(1,3)], facets = FALSE) + 
+  ggtitle("Moving averages") + ylab("Values") +
+  xlab("Dates") 
+autoplot(data[, c(1,4)], facets = FALSE) + 
+  ggtitle("Moving averages") + ylab("Values") +
+  xlab("Dates") 
+  
+```
+
+
+
+```{r}
+Acf(data$MA.2x4, lag.max = 50, plot = TRUE)
+Acf(data$MA.2x4, lag.max = 50, type = "partial", plot = TRUE)
+```
+```{r}
+estimates.1 <- Arima(data$MA.2x4, order = c(5,0,3), method = "ML")
+estimates.2 <- Arima(data$MA.2x4, order = c(2,0,3), method = "ML")
+
+summary(estimates.1)
+summary(estimates.2)
+
+```
+```{r}
+plot(forecast(estimates.1))
+plot(forecast(estimates.2))
+```
+
